@@ -10,7 +10,7 @@ function jira() {
   local action=$(_jira_find_property ".jira-default-action" "JIRA_DEFAULT_ACTION")
   if [[ -n "$1" ]]; then
     action=$1
-  if [[ -z "$action" ]]; then
+  elif [[ -z "$action" ]]; then
     action="new"
   fi
 
@@ -94,7 +94,7 @@ error: JIRA URL is not specified anywhere.
 
 Valid options, in order of precedence:
   .jira-url file
-  \<parents\>/.jira-url file
+  <parents>/.jira-url file
   \$HOME/.jira-url file
   \$JIRA_URL environment variable
 EOF
