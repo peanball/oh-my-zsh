@@ -2,42 +2,25 @@
 #
 # See README.md for details
 
+
+
 function jira() {
   emulate -L zsh
-  local action jira_url jira_prefix
+  
+  local action=$(_jira_find_property ".jira-default-action" "JIRA_DEFAULT_ACTION")
   if [[ -n "$1" ]]; then
     action=$1
-  elif [[ -f .jira-default-action ]]; then
-    action=$(cat .jira-default-action)
-  elif [[ -f ~/.jira-default-action ]]; then
-    action=$(cat ~/.jira-default-action)
-  elif [[ -n "${JIRA_DEFAULT_ACTION}" ]]; then
-    action=${JIRA_DEFAULT_ACTION}
-  else
+  if [[ -z "$action" ]]; then
     action="new"
   fi
 
-  if [[ -f .jira-url ]]; then
-    jira_url=$(cat .jira-url)
-  elif [[ -f ~/.jira-url ]]; then
-    jira_url=$(cat ~/.jira-url)
-  elif [[ -n "${JIRA_URL}" ]]; then
-    jira_url=${JIRA_URL}
-  else
+  local jira_url=$(_jira_find_property ".jira-url" "JIRA_URL")
+  if [[ -z "$jira_url" ]]; then
     _jira_url_help
     return 1
   fi
 
-  if [[ -f .jira-prefix ]]; then
-    jira_prefix=$(cat .jira-prefix)
-  elif [[ -f ~/.jira-prefix ]]; then
-    jira_prefix=$(cat ~/.jira-prefix)
-  elif [[ -n "${JIRA_PREFIX}" ]]; then
-    jira_prefix=${JIRA_PREFIX}
-  else
-    jira_prefix=""
-  fi
-
+  local jira_prefix=$(_jira_find_property ".jira-prefix" "JIRA_PREFIX")
 
   if [[ $action == "new" ]]; then
     echo "Opening new issue"
@@ -85,12 +68,33 @@ function jira() {
   fi
 }
 
+function _jira_find_property() {
+  local file_name="$1"
+  local fallback_env="$2"
+
+  local current_dir="$(pwd)"
+
+  while [[ ! -a "${current_dir}/${file_name}" ]]; do
+    if [[ "$current_dir" == "/" ]]; then break; fi;
+    current_dir=$(dirname "$current_dir")
+  done
+
+  if [[ -a "${current_dir}/${file_name}" ]]; then
+    cat "${current_dir}/${file_name}"
+  elif [[ -a "~/${file_name}" ]]; then
+    cat "~/${file_name}"
+  else
+    echo ${(P)fallback_env}
+  fi
+}
+
 function _jira_url_help() {
   cat << EOF
 error: JIRA URL is not specified anywhere.
 
 Valid options, in order of precedence:
   .jira-url file
+  \<parents\>/.jira-url file
   \$HOME/.jira-url file
   \$JIRA_URL environment variable
 EOF
